@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>fabric - Polygon</title>
+    <style>
+        .btn-danger {padding:4px 8px; border:0 none; background-color:#991b1b; color:#fff; }
+    </style>
+</head>
+<body>
+
+    <div class="">
+        <button type="button" onclick="toggleDrawPolygon()">폴리곤 그리기</button>
+        <button type="button" onclick="editPolygon()">폴리곤 변경</button>
+        <button type="button" onclick="resizePolygon()">폴리곤 사이즈 변경 및 이동</button>
+        <!-- <button class="btn-sm rounded btn-secondary" type="button" onclick="deleteSelected()">선택 폴리곤 삭제 </button>  -->
+        <!-- <button class="btn-sm rounded btn-secondary" type="button" onclick="clearPolygon()">전체 폴리곤 삭제</button> -->
+    </div>
+    <div style="margin-top:20px;">
+        <div class="canvas_box" style="position:relative; display:inline-flex">
+            <canvas id="mycanvas"></canvas>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-1.12.4.js" integrity="sha256-Qw82+bXyGq6MydymqBxNPYTaUXXq7c8v3CwiYwLLNXU=" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/fabric@4.0.0-beta.12/dist/fabric.js"></script>
+        <script type="text/javascript">
+            let activeLine;
+            let activeShape;
+            let canvas;
+            let lineArray = [];
+            let pointArray = [];
+            let drawMode = false;
+            let polygonIndex = 0;
+            const canvasBox = document.querySelector('.canvas_box')
+
+            function initCanvas() {
+                canvas = new fabric.Canvas('mycanvas');
+                // canvas.backgroundColor = 'rgba(0,0,0,0.3)';
+                canvas.setHeight(720);
+                canvas.setWidth(1280);
+                var imageUrl = "./sample_img.png";
+
+                // Define 
+                canvas.setBackgroundImage(imageUrl, canvas.renderAll.bind(canvas), {
+                    // Optionally add an opacity lvl to the image
+                    backgroundImageOpacity: 0.5,
+                    // should the image be resized to fit the container?
+                    backgroundImageStretch: true
+                });
+
+                //fabric.Object.prototype.originX = 'center';
+                //fabric.Object.prototype.originY = 'center';
+
+
+                canvas.on('mouse:down', onMouseDown);
+                canvas.on('mouse:up', onMouseUp);
+                canvas.on('mouse:move', onMouseMove);
+                canvas.on('object:moving', onObjectMove);
+                canvas.on('object:scaling', onObjectMove);
+            }
+
+            function onMouseDown(options) {    
+                if (drawMode) {
+                    if (options.target && options.target.id === pointArray[0].id) {
+                        // when click on the first point
+                        generatePolygon(pointArray);
+                        $('.drow_btn').removeClass('active')
+                    } else {
+                        addPoint(options);
+                        $('.drow_btn').addClass('active')
+                    }
+                }
+                
+                var evt = options.e;
+                if (evt.altKey === true) {
+                    this.isDragging = true;
+                    this.selection = false;
+                    this.lastPosX = evt.clientX;
+                    this.lastPosY = evt.clientY;
+                }
+            }
+
+            function onMouseUp(options) {
+                this.isDragging = false;
+                this.selection = true;
+            }
+
+            function onMouseMove(options) {
+                if (this.isDragging) {
+                    var e = options.e;
+                    this.viewportTransform[4] += e.clientX - this.lastPosX;
+                    this.viewportTransform[5] += e.clientY - this.lastPosY;
+                    this.requestRenderAll();
+                    this.lastPosX = e.clientX;
+                    this.lastPosY = e.clientY;
+                } 
+                if (drawMode) {
+                    if (activeLine && activeLine.class === 'line') {
+                        const pointer = canvas.getPointer(options.e);
+                        activeLine.set({
+                            x2: pointer.x,
+                            y2: pointer.y
+                        });
+                        const points = activeShape.get('points');
+                        points[pointArray.length] = {
+                            x: pointer.x,
+                            y: pointer.y,
+                        };
+                        activeShape.set({
+                            points
+                        });
+                    }
+                    canvas.renderAll();
+                }
+            }
+
+            function onObjectMove(option) {
+                const object = option.target;
+                object._calcDimensions();
+                object.setCoords();    
+                canvas.renderAll();
+
+                var width = option.target.aCoords.br.x - option.target.aCoords.bl.x;
+                var height = option.target.aCoords.br.y - option.target.aCoords.tr.y;
+
+                const deleteBtn = document.querySelector(`.polygon_num_${option.target.typeid}`)
+
+                deleteBtn.style.left = (option.target.left + (width/2)) - 12 + 'px';
+                deleteBtn.style.top = (option.target.top + (height/2)) - 14 + 'px';
+            }
+
+            function toggleDrawPolygon(event) {
+                if (drawMode) {
+                    // stop draw mode
+                    activeLine = null;
+                    activeShape = null;
+                    lineArray = [];
+                    pointArray = [];
+                    canvas.selection = true;
+                    drawMode = false;
+                    $('.drow_btn').removeClass('active')
+                } else {
+                    // start draw mode
+                    canvas.selection = false;
+                    drawMode = true;
+                    $('.drow_btn').addClass('active')
+                }
+            }
+
+            function addPoint(options) {
+                var pointer = canvas.getPointer(options);
+                const pointOption = {
+                    id: new Date().getTime(),
+                    radius: 5,
+                    fill: '#ffffff',
+                    stroke: '#333333',
+                    strokeWidth: 0.5,
+                    left: pointer.x,
+                    top: pointer.y,
+                    selectable: false,
+                    hasBorders: false,
+                    hasControls: false,
+                    originX: 'center',
+                    originY: 'center',
+                    objectCaching: false,
+                };
+                const point = new fabric.Circle(pointOption);
+
+                if (pointArray.length === 0) {
+                    // fill first point with red color
+                    point.set({
+                        fill: 'red'
+                    });
+                }
+
+                const linePoints = [
+                    pointer.x,
+                    pointer.y,
+                    pointer.x,
+                    pointer.y
+                ];
+                const lineOption = {
+                    strokeWidth: 1,
+                    fill: '#ff0000',
+                    stroke: '#ff0000',
+                    originX: 'center',
+                    originY: 'center',
+                    selectable: false,
+                    hasBorders: false,
+                    hasControls: false,
+                    evented: false,
+                    objectCaching: false,
+                };
+                const line = new fabric.Line(linePoints, lineOption);
+                line.class = 'line';
+
+                // 그리기 할때
+                if (activeShape) {
+                    const pos = canvas.getPointer(options.e);
+                    const points = activeShape.get('points');
+                    points.push({
+                        x: pos.x,
+                        y: pos.y
+                    });
+                    const polygon = new fabric.Polygon(points, {
+                        stroke: '#333333',
+                        strokeWidth: 1,
+                        fill: '#cccccc',
+                        opacity: 0.3,
+                        selectable: false,
+                        hasBorders: false,
+                        hasControls: false,
+                        evented: false,
+                        objectCaching: false,
+                    });
+                    canvas.remove(activeShape);
+                    canvas.add(polygon);
+                    activeShape = polygon;
+                    canvas.renderAll();
+                } else {
+                    const polyPoint = [{
+                        x: pointer.x,
+                        y: pointer.y,
+                    }, ];
+                    const polygon = new fabric.Polygon(polyPoint, {
+                        stroke: '#333333',
+                        strokeWidth: 1,
+                        fill: '#cccccc',
+                        opacity: 0.3,
+                        selectable: false,
+                        hasBorders: false,
+                        hasControls: false,
+                        evented: false,
+                        objectCaching: false,
+                    });
+                    activeShape = polygon;
+                    canvas.add(polygon);
+                }
+
+                activeLine = line;
+                pointArray.push(point);
+                lineArray.push(line);
+
+                canvas.add(line);
+                canvas.add(point);
+            }
+
+            function generatePolygon(pointArray) {
+                const points = [];
+                // collect points and remove them from canvas
+                for (const point of pointArray) {
+                    points.push({
+                        x: point.left,
+                        y: point.top,
+                    });
+                    canvas.remove(point);
+                }
+
+                // remove lines from canvas
+                for (const line of lineArray) {
+                    canvas.remove(line);
+                }
+
+                // remove selected Shape and Line 
+                canvas.remove(activeShape).remove(activeLine);
+
+                // create polygon from collected points
+                console.log(points)
+                polygonIndex += 1;
+                const polygon = new fabric.Polygon(points, {
+                    id: new Date().getTime(),
+                    stroke: '#0084ff',
+                    fill: '#F34040',
+                    opacity: 0.3,
+                    objectCaching: false,
+                    moveable: false,
+                    selectable: true,
+
+                    typeid :polygonIndex ,
+                    borderColor: 'red',
+                    cornerColor: '#500724',
+                    cornerSize: 10,
+                    transparentCorners: false
+                });
+                const temp = document.createElement('div');
+                temp.classList.add(`polygon_num_${polygonIndex}`);
+                temp.innerHTML = `
+                    <button class="px-2 py-1 btn-danger" onclick="polygonDelete(${polygonIndex})">x</button>
+                `
+                temp.style.position = "absolute";
+                temp.style.left = (polygon.left + (polygon.width/2)) - 12 + 'px';
+                temp.style.top = (polygon.top + (polygon.height/2)) - 14 + 'px';
+                temp.style.fontSize = '16px';
+
+                canvasBox.append(temp)
+                
+                canvas.add(polygon);
+
+                toggleDrawPolygon();
+                // editPolygon();
+            }
+
+            /**
+             * define a function that can locate the controls.
+             * this function will be used both for drawing and for interaction.
+             */
+            function polygonPositionHandler(dim, finalMatrix, fabricObject) {
+                var x = (fabricObject.points[this.pointIndex].x - fabricObject.pathOffset.x),
+                    y = (fabricObject.points[this.pointIndex].y - fabricObject.pathOffset.y);
+                return fabric.util.transformPoint(
+                    { x: x, y: y },
+                    fabric.util.multiplyTransformMatrices(
+                        fabricObject.canvas.viewportTransform,
+                        fabricObject.calcTransformMatrix()
+                    )
+                );
+            }
+
+            /**
+             * define a function that will define what the control does
+             * this function will be called on every mouse move after a control has been
+             * clicked and is being dragged.
+             * The function receive as argument the mouse event, the current trasnform object
+             * and the current position in canvas coordinate
+             * transform.target is a reference to the current object being transformed,
+             */
+            function actionHandler(eventData, transform, x, y) {
+                var polygon = transform.target,
+                    currentControl = polygon.controls[polygon.__corner],
+                    mouseLocalPosition = polygon.toLocalPoint(new fabric.Point(x, y), 'center', 'center'),
+                    polygonBaseSize = polygon._getNonTransformedDimensions(),
+                    size = polygon._getTransformedDimensions(0, 0),
+                    finalPointPosition = {
+                        x: mouseLocalPosition.x * polygonBaseSize.x / size.x + polygon.pathOffset.x,
+                        y: mouseLocalPosition.y * polygonBaseSize.y / size.y + polygon.pathOffset.y
+                    };
+                polygon.points[currentControl.pointIndex] = finalPointPosition;
+
+                var width = polygon.aCoords.br.x - polygon.aCoords.bl.x;
+                var height = polygon.aCoords.br.y - polygon.aCoords.tr.y;
+
+                const deleteBtn = document.querySelector(`.polygon_num_${polygon.typeid}`)
+
+                deleteBtn.style.left = (polygon.left + (width/2)) - 12 + 'px';
+                deleteBtn.style.top = (polygon.top + (height/2)) - 14 + 'px';
+
+                return true;
+            }
+
+            /**
+             * define a function that can keep the polygon in the same position when we change its
+             * width/height/top/left.
+             */
+            function anchorWrapper(anchorIndex, fn) {
+                return function (eventData, transform, x, y) {
+                    var fabricObject = transform.target,
+                        absolutePoint = fabric.util.transformPoint({
+                            x: (fabricObject.points[anchorIndex].x - fabricObject.pathOffset.x),
+                            y: (fabricObject.points[anchorIndex].y - fabricObject.pathOffset.y),
+                        }, fabricObject.calcTransformMatrix()),
+                        actionPerformed = fn(eventData, transform, x, y),
+                        newDim = fabricObject._setPositionDimensions({}),
+                        polygonBaseSize = fabricObject._getNonTransformedDimensions(),
+                        newX = (fabricObject.points[anchorIndex].x - fabricObject.pathOffset.x) / polygonBaseSize.x,
+                        newY = (fabricObject.points[anchorIndex].y - fabricObject.pathOffset.y) / polygonBaseSize.y;
+                    fabricObject.setPositionByOrigin(absolutePoint, newX + 0.5, newY + 0.5);
+                    return actionPerformed;
+                }
+            }
+
+            // 폴리곤 변경
+            function editPolygon() {
+                let activeObject = canvas.getActiveObject();
+                if (!activeObject) {
+                    activeObject = canvas.getObjects()[0];
+                    canvas.setActiveObject(activeObject);
+                }
+
+                activeObject.edit = true;
+                activeObject.objectCaching = false;
+
+                const lastControl = activeObject.points.length - 1;
+                activeObject.cornerStyle = 'circle';
+                activeObject.controls = activeObject.points.reduce((acc, point, index) => {
+                    acc['p' + index] = new fabric.Control({
+                        positionHandler: polygonPositionHandler,
+                        actionHandler: anchorWrapper(index > 0 ? index - 1 : lastControl, actionHandler),
+                        actionName: 'modifyPolygon',
+                        pointIndex: index,
+                    });
+                    return acc;
+                }, {});
+
+                activeObject.hasBorders = false;
+
+                canvas.requestRenderAll();
+            }
+
+            // 크기조정
+            function resizePolygon() {
+                let activeObject = canvas.getActiveObject();
+                if (!activeObject) {
+                    activeObject = canvas.getObjects()[0];
+                    canvas.setActiveObject(activeObject);
+                }
+
+                activeObject.edit = false;
+                activeObject.objectCaching = false;
+                activeObject.controls = fabric.Object.prototype.controls;
+                activeObject.cornerStyle = 'rect';
+                activeObject.hasBorders = true;
+
+                canvas.requestRenderAll();
+            }
+
+            // 전체삭제
+            function clearPolygon() {
+                canvas.remove(...canvas.getObjects());
+            }
+
+            // 선택삭제
+            function deleteSelected() {
+                const activeObject = canvas.getActiveObject();
+                if (activeObject && activeObject.type === 'polygon') {
+                    canvas.remove(activeObject);
+                    canvas.discardActiveObject();
+                    canvas.renderAll();
+                }
+            }
+
+            function polygonDelete(num){
+                const index = num
+                console.log(num)
+                const activeObject = canvas.getObjects().filter((item)=>item.typeid == index);
+                canvas.remove(activeObject[0]);
+                canvas.discardActiveObject();
+                canvas.renderAll();
+                $(`.polygon_num_${index}`).remove();
+
+            }
+
+            initCanvas();
+        </script>
+</body>
+</html>

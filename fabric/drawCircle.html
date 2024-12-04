@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>fabric - Circle</title>
+    <style>
+        .sensor_dot {
+            z-index:9;
+            position:absolute;
+            width:12px; height:12px;
+            border-radius:50%;
+            opacity:.8;
+        }
+        .sensor_dot.bg_danger {
+            background-color:#991b1b;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <button type="button" onclick="shape.setShape('ellipse')">폴리곤 그리기</button>
+        <button type="button" onclick="deleteSelected()">선택 폴리곤 삭제 </button> <!-- Added button -->
+        <button type="button" onclick="clearPolygon()">전체 폴리곤 삭제</button>
+    </div>
+    <div style="margin-top:20px; ">
+        <div class="canvas_box" style="position:relative; display:inline-flex">
+            <canvas id="mycanvas"></canvas>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-1.12.4.js" integrity="sha256-Qw82+bXyGq6MydymqBxNPYTaUXXq7c8v3CwiYwLLNXU=" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/fabric@4.0.0-beta.12/dist/fabric.js"></script>
+    <script type="text/javascript">
+        const canvasBox = document.querySelector('.canvas_box')
+        let sensor_size = 0;
+        const canvas = new fabric.Canvas("mycanvas");
+        canvas.setHeight(720);
+        canvas.setWidth(1280);
+        var imageUrl = "./sample_img.png";
+
+        // Define 
+        canvas.setBackgroundImage(imageUrl, canvas.renderAll.bind(canvas), {
+            // Optionally add an opacity lvl to the image
+            backgroundImageOpacity: 0.5,
+            // should the image be resized to fit the container?
+            backgroundImageStretch: true
+        });
+
+        class Shape {
+            constructor(canvas) {
+                this.shapeTarget = null; // 그리기대상
+                this.shapeMode = false; // 그리기모드 여부
+                this.drawing = false; // 그리기중인지
+                this.startX = 0; // 시작좌표 x
+                this.startY = 0; // 시작좌표 y
+                this.strokeWidth = 1; // 선굵기
+                this.color = {
+                    // 색상 object
+                    fill: "#F34040",
+                    stroke: "#d31717"
+                };
+                this.target = null; // 그려질 도형 대상
+                this.canvas = canvas;
+            }
+            objectLock(isLock) {
+                canvas.discardActiveObject();
+                canvas.forEachObject((o) => {
+                    o.hasBorders = o.hasControls = o.selectable = !isLock;
+                    o.hoverCursor = isLock ? "default" : "move";
+                });
+                canvas.requestRenderAll();
+            }
+            reset() {
+                this.shapeMode = false;
+                this.shapeTarget = null;
+                this.drawing = false;
+                this.startX = 0;
+                this.startY = 0;
+                $('.drow_btn').removeClass('active')
+                this.objectLock(false);
+                if (this.target) {
+                    // 타겟이 있는경우 모든객체 active 해제
+                    const result = this.canvas.getObjects().find((x) => x == this.target);
+                    if (result)
+                        this.canvas.setActiveObject(result);
+
+                    sensor_size += 1;
+                    const dot = document.createElement('div');
+                    dot.classList.add(`beacon_dot_${sensor_size}`,"sensor_dot", "bg_danger")
+
+                    dot.style.top = (result.top + ((result.height / 2) - 6)) + 'px';
+                    dot.style.left = (result.left + ((result.width / 2) - 6)) + 'px';
+
+                    canvasBox.append(dot);
+
+                    this.canvas.requestRenderAll();
+                }
+                this.target = null;
+                this.canvas.selection = true;
+            }
+            setShape(name) {
+                this.shapeMode = true;
+                this.canvas.selection = false;
+                this.shapeTarget = name;
+                $('.drow_btn').addClass('active')
+                const options = {
+                    strokeWidth: this.strokeWidth,
+                    stroke: this.color.stroke,
+                    fill: this.color.fill,
+                    opacity: 0.3,
+                    id:sensor_size,
+                    
+                    borderColor: 'red',
+                    cornerColor: '#500724',
+                    cornerSize: 10,
+                    transparentCorners: false
+                };
+                
+                if (name == "ellipse")
+                    this.target = new fabric.Ellipse(options);
+                
+                this.objectLock(true);
+            }
+            drawShape(options) {
+                var _a, _b;
+                // 도형 그리기
+                if (this.target) {
+                    // 시작점 좌표 설정
+                    this.target.left = this.startX = ((_a = options.pointer) === null || _a === void 0 ? void 0 : _a.x) || 0;
+                    this.target.top = this.startY = ((_b = options.pointer) === null || _b === void 0 ? void 0 : _b.y) || 0;
+                    this.canvas.add(this.target);
+                }
+                // 드로잉 켜주기
+                this.drawing = true;
+            }
+            updateShape(options) {
+                var _a, _b;
+                if (this.drawing && this.target) {
+                    const pointer = this.canvas.getPointer(options.e);
+                    // 마우스 포인터가 시작점보다 작으면 object 위치보정
+                    if (this.startX > pointer.x) {
+                        this.target.set({ left: Math.abs(pointer.x) });
+                    }
+                    if (this.startY > pointer.y) {
+                        this.target.set({ top: Math.abs(pointer.y) });
+                    }
+                    const width = Math.abs(this.startX - pointer.x);
+                    const height = Math.abs(this.startY - pointer.y);
+                
+                    if (this.shapeTarget == "ellipse") {
+                        // 원인경우
+                        const ellipse = this.target;
+                        ellipse.set("rx", width / 2);
+                        ellipse.set("ry", width / 2);
+
+                    }
+                    
+                }
+                this.canvas.requestRenderAll();
+            }
+            
+            updateObject(option) {
+                const activeObjects = canvas.getActiveObjects();
+                if (activeObjects.length > 0) {
+                    activeObjects.forEach((o) => {
+                        o.set(option);
+                    });
+                    this.canvas.requestRenderAll();
+                }
+            }
+
+            moveShape(options){
+                // 움직인 타겟의 index
+                const targetIndex = options.target.id;
+                var dot = document.querySelector(`.beacon_dot_${targetIndex+1}`);
+                var width = options.target.aCoords.br.x - options.target.aCoords.bl.x;
+                var height = options.target.aCoords.br.y - options.target.aCoords.tr.y;
+
+                dot.style.top = (options.target.top + ((height / 2) - 6)) + 'px';
+                dot.style.left = (options.target.left + ((width / 2) - 6)) + 'px';
+
+                // btn.style.left = (options.target.left) + 'px';
+                // btn.style.top = (options.target.top + ((width / 2) - (btn.innerText.includes('위험') ? 28 : 12))) + 'px';
+                // btn.style.width= (width)+ 'px';
+            }
+        }
+        const shape = new Shape(canvas);
+        canvas.on("mouse:down", (options) => {
+            if (shape.shapeMode)
+                shape.drawShape(options); // 도형 그리기 시작
+        });
+        canvas.on("mouse:up", (options) => {
+            if (shape.shapeMode)
+                shape.reset(); // 도형그리기 종료후 리셋
+        });
+        canvas.on("mouse:move", (options) => {
+            if (shape.drawing)
+                shape.updateShape(options); // 도형 그리기 시작
+        });
+        canvas.on("object:moving",(options)=>{
+            shape.moveShape(options)
+        })
+        canvas.on("object:scaling",(options)=>{
+            shape.moveShape(options)
+        })
+
+        function resizePolygon() {
+            let activeObject = canvas.getActiveObject();
+            if (!activeObject) {
+                activeObject = canvas.getObjects()[0];
+                canvas.setActiveObject(activeObject);
+            }
+
+            activeObject.edit = false;
+            activeObject.objectCaching = false;
+            activeObject.controls = fabric.Object.prototype.controls;
+            activeObject.cornerStyle = 'rect';
+            activeObject.hasBorders = true;
+
+            canvas.requestRenderAll();
+        }
+
+        function clearPolygon() {
+            canvas.remove(...canvas.getObjects());
+            $('.sensor_dot').remove()
+        }
+
+        function deleteSelected() {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject && activeObject.type === 'ellipse') {
+                canvas.remove(activeObject);
+                canvas.discardActiveObject();
+                canvas.renderAll();
+                $(`.beacon_dot_${activeObject.id+1}`).remove();
+            }
+        }
+
+
+    
+    </script>
+</body>
+</html>
