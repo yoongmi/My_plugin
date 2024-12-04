@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>gsap - scrollTrigger</title>
+
+        <!-- css -->
+        <link rel="stylesheet" href="./css/style_scroll.css" />
+        <!-- 폰트 -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+
+        <!-- js -->
+        <script defer src="./js/script.js"></script>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.3/gsap.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.3/ScrollTrigger.min.js"></script>
+
+    </head>
+    <body>
+        <!-- 헤더 -->
+        <header>
+            <div class="inner flex items-center justify-between">
+                <div class="flex items-center">
+                    <h1 class="logo">
+                        <a href="/"><img src="./img/logo.svg" alt="로고" />Deck</a>
+                    </h1>
+                    <ul class="gnb oswald">
+                        <li><a href="javascript:;">TECHNOLOGY</a></li>
+                        <li><a href="javascript:;">IDEAS</a></li>
+                        <li><a href="javascript:;">LEADERSHIP</a></li>
+                        <li><a href="javascript:;">VIDEO</a></li>
+                        <li><a href="javascript:;">NEWS</a></li>
+                        <li><a href="javascript:;">FINANCE</a></li>
+                        <li><a href="javascript:;">ENTERTAINMENT</a></li>
+                    </ul>
+                </div>
+                <button><img src="./img/menu icon.svg" alt="메뉴 아이콘" /></button>
+            </div>
+        </header>
+
+        <!-- 컨텐츠 -->
+        <div id="container">
+            <section class="section02">
+                <div class="inner">
+                    <!-- 메인배너 -->
+                    <div class="main_banner">
+                        <div class="slide_box">
+                            <div class="img_box center_type img_01">
+                                <img class="img" src="https://images.unsplash.com/photo-1481887328591-3e277f9473dc?q=80&w=3000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="">
+                                <div class="center_box">
+                                    <span class="category oswald">Finance</span>
+                                    <p class="big_txt oswald">This tie brand is bucking the retail apocalypse with a massive store expansion</p>
+                                    <p class="sm_txt">There is a lot of exciting stuff going on in the stars above us that make astronomy so much fun. The truth is the universe is a constantly changing, moving.</p>
+                                </div>
+                            </div>
+                            <div class="img_box center_type img_02">
+                                <img class="img" src="https://images.unsplash.com/photo-1730404691983-cc26f90b4f46?q=80&w=3506&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="">
+                                <div class="center_box">
+                                    <span class="category oswald">ENTERTAINMENT</span>
+                                    <p class="big_txt oswald">There is a lot of exciting stuff going on in the stars above us that make astronomy so much fun.</p>
+                                    <p class="sm_txt">This tie brand is bucking the retail apocalypse with a massive store expansion</p>
+                                </div>
+                            </div>
+                            <div class="img_box center_type img_03">
+                                <img class="img" src="https://images.unsplash.com/photo-1731200302446-6f412bde5aca?q=80&w=3474&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="">
+                                <div class="center_box">
+                                    <span class="category oswald">Gaming</span>
+                                    <p class="big_txt oswald">This tie brand is bucking the retail apocalypse with a massive store expansion</p>
+                                    <p class="sm_txt">There is a lot of exciting stuff going on in the stars above us that make astronomy so much fun. The truth is the universe is a constantly changing, moving.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <script>
+            // 처음로딩시
+            // gsap.fromTo('.section02 .img_01 .center_box .category', {opacity:0, scale:1, yPercent:100}, {opacity:1, scale:1, yPercent:0, duration:1})
+            // gsap.fromTo('.section02 .img_01 .center_box .big_txt', {opacity:0, scale:1, yPercent:50}, {opacity:1, scale:1, yPercent:0, duration:1, delay:0.3}, )
+            // gsap.fromTo('.section02 .img_01 .center_box .sm_txt', {opacity:0, scale:1, yPercent:50}, {opacity:1, scale:1, yPercent:0, duration:1, delay:0.7}, )
+
+
+            // 스크롤시
+            const tl = gsap.timeline();
+            tl
+            .fromTo('.section02 .img_01 .center_box', {yPercent: 100}, {yPercent:30})
+            .fromTo('.section02 .img_02', {opacity: 0}, {opacity:1, delay:1})
+            .fromTo('.section02 .img_02 .center_box', {yPercent: 100}, {yPercent:30})
+            .fromTo('.section02 .img_03', {opacity: 0}, {opacity:1, delay:1})
+            .fromTo('.section02 .img_03 .center_box', {yPercent: 100}, {yPercent:30})
+            
+            // .fromTo('.section02 .img_02', {opacity: 0}, {opacity:1},)
+            // .fromTo('.section02 .img_02 .center_box', {scale: 0.7}, {scale:1},)
+            
+            
+            
+            ScrollTrigger.create({
+                animation: tl,
+                trigger: "#container",  // 객체기준범위
+                start: "top top",   // 시작지점
+                end: "500% 100%",  //끝지점
+                pin: true,
+                scrub: 1,    //부드러운 스크러빙
+                anticipatePin: 1,
+                // markers:true,   //개발가이드선
+                // snap: {
+                //     snapTo: 'labels',
+                //     duration: { min: 1, max: 2 },
+                //     delay: 0,
+                //     // ease: 'power1.inOut'
+                // }
+            });
+        
+    
+        </script>
+
+
+        <!-- 푸터 -->
+        <footer>
+            <div class="inner">
+                <div class="info_box">
+                    <img src="./img/footer_logo.svg" alt="푸터로고" />
+                    <p>© 2018 Deck<br />Component based UI Kit</p>
+                </div>
+                <div class="subscribe">
+                    <form class="flex">
+                        <input type="text" placeholder="Your E-mail" />
+                        <button type="submit" class="oswald">SUBSCRIBE</button>
+                    </form>
+                </div>
+                <div class="sns flex items-center">
+                    <span>Follow us:</span>
+                    <a href="javascript:;"><img src="./img/sns_instagram.svg" alt="인스타그램" /> </a>
+                    <a href="javascript:;"><img src="./img/sns_pinterest.svg" alt="핀터레스트" /></a>
+                    <a href="javascript:;"><img src="./img/sns_twitter.svg" alt="트위터" /></a>
+                    <a href="javascript:;"><img src="./img/sns_facebook.svg" alt="페이스북" /></a>
+                </div>
+                <ul class="fnb oswald flex">
+                    <li><a href="javascript:;">TECHNOLOGY</a></li>
+                    <li><a href="javascript:;">IDEAS</a></li>
+                    <li><a href="javascript:;">LEADERSHIP</a></li>
+                    <li><a href="javascript:;">VIDEO</a></li>
+                    <li><a href="javascript:;">NEWS</a></li>
+                    <li><a href="javascript:;">FINANCE</a></li>
+                    <li><a href="javascript:;">ENTERTAINMENT</a></li>
+                </ul>
+            </div>
+        </footer>
+    </body>
+</html>
