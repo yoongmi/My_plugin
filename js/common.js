@@ -1,6 +1,6 @@
 
 // SIDEMENU 
-fetch("_sidemenu.html")
+fetch("/layout/_sidemenu.html")
     .then((response) => response.text())
     .then((data) => {
         document.getElementById("wrap").insertAdjacentHTML('afterbegin',data)
@@ -8,7 +8,7 @@ fetch("_sidemenu.html")
     .catch((error) => console.error("sidenav를 못 불러 왔습니다!", error))
 
 // TOPMENU
-fetch("_topmenu.html")
+fetch("/layout/_topmenu.html")
     .then((response) => response.text())
     .then((data) => {
         document.getElementById("content").insertAdjacentHTML('afterbegin',data)
