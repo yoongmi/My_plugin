@@ -1,0 +1,17 @@
+html, body {height: 100%; }
+canvas {position: fixed; left: 50%; top: 50%; max-width: 100vw; max-height: 100vh; transform: translate(-50%, -50%); }
+
+#wrap {position:relative; overflow:hidden; height:100%; }
+section {z-index:10; position:absolute; width:100%; height:100%; background-color:#fff;}
+
+.section01 {display:flex;  height:100%; background:url('../img/the_new_tucson_colors_exterior_bg.jpg') no-repeat center center / auto 100%; }
+.section01 img {position:sticky; left:0; top:0; right:0; bottom:0; width:100%; margin:auto;  }
+
+.section02 {height:100%; }
+.section02:before {content:''; z-index:2; position:absolute; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.2);}
+.section02 .txt_box {z-index:3; position:absolute; left:0; top:50%; width:100%; text-align:center; transform:translateY(-50%); color:#fff; }
+.section02 .txt_box h3 {position:relative; height:100px; font-size:160px; font-weight:bold; }
+.section02 .txt_box h3 p {position:absolute; left:0; top:50%; width:100%; transform:translateY(-50%);}
+.section02 .txt_box > p {min-height:25px; font-size:18px; }
+
+.section02 img {z-index:1; position:relative; width:100%; height:100%; object-fit:cover; transform-origin:80% 50%; }
